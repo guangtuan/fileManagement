@@ -48,6 +48,11 @@ const totalHolder = {
     size: 0
 };
 
+const printProgress = ({ result, totalHolder }) => {
+    console.log("current file count: ", result.length);
+    console.log("file total size: ", humanFileSize(totalHolder.size));
+};
+
 const options = {
     listeners: {
         names: function (root, nodeNamesArray) {
@@ -73,9 +78,10 @@ const options = {
                 hash,
                 size: fileStats.size
             }));
-            console.log("current file count: ", result.length);
             totalHolder.size += fileStats.size;
-            console.log("file total size: ", humanFileSize(totalHolder.size));
+            if (result.length % 10 === 0) {
+                printProgress({ result, totalHolder });
+            }
             next();
         },
         errors: function (root, nodeStatsArray, next) {
@@ -87,6 +93,8 @@ const options = {
 const destPath = process.argv[2];
 
 walk.walkSync(destPath, options);
+
+printProgress({ result, totalHolder });
 
 const repeat = Object.entries(R.groupBy(R.prop('hash'))(result)).filter(([hash, list]) => list.length > 1);
 
