@@ -93,18 +93,19 @@ const repeat = Object.entries(R.groupBy(R.prop('hash'))(result)).filter(([hash, 
 writeReport(JSON.stringify(
     {
         message: `total repeat item: ${repeat.length}`,
-        detail: repeat
+        detail: result
     },
     null,
     4
 ));
 
-const rmStatment = repeat
-    .map(R.compose(R.remove(0, 1), R.last))
-    .flat()
-    .map(R.prop('fullPath'))
-    .map(fullPath => `rm ${fullPath}`)
-    .join('\n');
+const rmStatment = R.compose(
+    R.join("\n"),
+    R.map(fullPath => `rm ${fullPath}`),
+    R.map(R.prop('fullPath')),
+    R.flatten,
+    R.map(R.compose(R.remove(0, 1), R.last))
+)(repeat);
 
 writeRmStatement(rmStatment);
 
@@ -116,4 +117,4 @@ const saveSizeReport = R.compose(
     R.map(R.compose(R.remove(0, 1), R.last))
 )(repeat);
 
-console.log('remove', saveSizeReport);
+console.log('totally save', saveSizeReport);
