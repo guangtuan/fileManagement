@@ -1,0 +1,11 @@
+{
+  "name": "fileManagement",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "md5-file": "^5.0.0",
+    "ramda": "^0.27.1",
+    "walk": "^2.3.14"
+  }
+}
