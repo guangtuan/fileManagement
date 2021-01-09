@@ -1,8 +1,15 @@
 const walk = require('walk');
-const fs = require('fs');
 const path = require('path');
 const md5File = require('md5-file');
 const R = require('ramda');
+const write = require('./toFile');
+const writeReport = write(path.join(__dirname, 'report.json'));
+const writeRmStatement = write(path.join(__dirname, 'rm.sh'));
+
+const debug = obj => {
+    console.log(JSON.stringify(obj, null, 4));
+    return obj;
+};
 
 function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
@@ -30,11 +37,16 @@ class ResultObject {
     constructor({ fullPath, hash, size }) {
         this.fullPath = fullPath;
         this.hash = hash;
+        this.size = size;
         this.humanFileSize = humanFileSize(size);
     }
 };
 
 const result = [];
+
+const totalHolder = {
+    size: 0
+};
 
 const options = {
     listeners: {
@@ -61,6 +73,9 @@ const options = {
                 hash,
                 size: fileStats.size
             }));
+            console.log("current file count: ", result.length);
+            totalHolder.size += fileStats.size;
+            console.log("file total size: ", humanFileSize(totalHolder.size));
             next();
         },
         errors: function (root, nodeStatsArray, next) {
@@ -73,10 +88,32 @@ const destPath = process.argv[2];
 
 walk.walkSync(destPath, options);
 
-// console.table(result);
-
 const repeat = Object.entries(R.groupBy(R.prop('hash'))(result)).filter(([hash, list]) => list.length > 1);
 
-console.log(
-    JSON.stringify(repeat, null, 4)
-);
+writeReport(JSON.stringify(
+    {
+        message: `total repeat item: ${repeat.length}`,
+        detail: repeat
+    },
+    null,
+    4
+));
+
+const rmStatment = repeat
+    .map(R.compose(R.remove(0, 1), R.last))
+    .flat()
+    .map(R.prop('fullPath'))
+    .map(fullPath => `rm ${fullPath}`)
+    .join('\n');
+
+writeRmStatement(rmStatment);
+
+const saveSizeReport = R.compose(
+    humanFileSize,
+    R.reduce(R.add, 0),
+    R.map(R.prop('size')),
+    R.flatten,
+    R.map(R.compose(R.remove(0, 1), R.last))
+)(repeat);
+
+console.log('remove', saveSizeReport);
